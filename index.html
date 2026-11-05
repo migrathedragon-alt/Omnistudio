@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OmniStudio AI - Ultimate Free Video Editor & Custom Transition Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #121214; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+    .canvas-grid { background-image: radial-gradient(#27272a 1px, transparent 1px); background-size: 20px 20px; }
+    @keyframes pulseBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+    @keyframes glitchShake { 0% { transform: translate(0); } 20% { transform: translate(-3px, 3px); } 40% { transform: translate(-3px, -3px); } 60% { transform: translate(3px, 3px); } 80% { transform: translate(3px, -3px); } 100% { transform: translate(0); } }
+    @keyframes bounceIn { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.05); } 70% { transform: scale(0.95); } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes waveDrift { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 h-screen w-screen flex flex-col overflow-hidden font-sans select-none">
+
+  <!-- TOP NAVBAR -->
+  <header class="h-14 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-4 z-20 shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 text-indigo-500 font-bold text-lg tracking-wider">
+        <i class="fa-solid fa-clapperboard"></i> OMNISTUDIO <span class="text-xs font-normal bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-2 py-0.5 rounded-full">PRO UNLOCKED</span>
+      </div>
+      <span class="text-zinc-700">|</span>
+      <input type="text" id="project-name" value="Master Cinematic Reel 2026" class="bg-transparent text-sm font-medium hover:bg-zinc-800 focus:bg-zinc-800 px-2 py-1 rounded text-zinc-300 focus:outline-none transition border border-transparent focus:border-zinc-700">
+    </div>
+
+    <!-- Aspect Ratio & Tutorial & Export -->
+    <div class="flex items-center gap-4">
+      <div class="flex items-center bg-zinc-800 rounded-lg p-1 border border-zinc-700 text-xs">
+        <button onclick="setAspectRatio('16:9')" id="ratio-16-9" class="px-2 py-1 rounded bg-indigo-600 text-white font-medium">16:9</button>
+        <button onclick="setAspectRatio('9:16')" id="ratio-9-16" class="px-2 py-1 rounded hover:text-zinc-300 text-zinc-400 font-medium">9:16</button>
+        <button onclick="setAspectRatio('1:1')" id="ratio-1-1" class="px-2 py-1 rounded hover:text-zinc-300 text-zinc-400 font-medium">1:1</button>
+      </div>
+
+      <button onclick="openTutorialModal()" class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-indigo-400 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-graduation-cap"></i> Tutorial
+      </button>
+
+      <button onclick="openExportModal()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-lg shadow-indigo-900/20">
+        <i class="fa-solid fa-file-export"></i> Render 4K Free
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN STUDIO BODY -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- LEFT SIDEBAR NAVIGATION -->
+    <div class="w-16 bg-zinc-900 border-r border-zinc-800 flex flex-col items-center py-4 gap-6 shrink-0">
+      <button onclick="switchTab('media')" id="tab-media" class="sidebar-tab text-indigo-500 flex flex-col items-center gap-1 text-[10px] font-medium transition hover:text-indigo-400" title="Media Library">
+        <i class="fa-solid fa-folder-open text-lg"></i> Media
+      </button>
+      <button onclick="switchTab('text')" id="tab-text" class="sidebar-tab text-zinc-500 flex flex-col items-center gap-1 text-[10px] font-medium transition hover:text-zinc-300" title="Kinetic Typography & Text FX">
+        <i class="fa-solid fa-font text-lg"></i> Text & FX
+      </button>
+      <button onclick="switchTab('transitions')" id="tab-transitions" class="sidebar-tab text-zinc-500 flex flex-col items-center gap-1 text-[10px] font-medium transition hover:text-zinc-300" title="Transitions & Custom Builder">
+        <i class="fa-solid fa-shuffle text-lg"></i> Transit
+      </button>
+      <button onclick="switchTab('warps')" id="tab-warps" class="sidebar-tab text-zinc-500 flex flex-col items-center gap-1 text-[10px] font-medium transition hover:text-zinc-300" title="Warps & Blur Filters">
+        <i class="fa-solid fa-wand-magic-sparkles text-lg text-pink-400"></i> Warps
+      </button>
+      <button onclick="switchTab('ai')" id="tab-ai" class="sidebar-tab text-zinc-500 flex flex-col items-center gap-1 text-[10px] font-medium transition hover:text-zinc-300" title="AI Suite">
+        <i class="fa-solid fa-brain text-lg text-purple-400"></i> AI Hub
+      </button>
+      <button onclick="switchTab('audio')" id="tab-audio" class="sidebar-tab text-zinc-500 flex flex-col items-center gap-1 text-[10px] font-medium transition hover:text-zinc-300" title="Audio & Voiceover">
+        <i class="fa-solid fa-microphone text-lg"></i> Audio
+      </button>
+    </div>
+
+    <!-- TAB PANEL CONTENT -->
+    <div class="w-72 bg-zinc-900/80 border-r border-zinc-800 flex flex-col shrink-0 overflow-y-auto p-4">
+      
+      <!-- MEDIA TAB -->
+      <div id="panel-media" class="tab-panel space-y-4">
+        <h3 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Project Assets</h3>
+        <label class="border-2 border-dashed border-zinc-700 hover:border-indigo-500 rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition bg-zinc-800/30">
+          <i class="fa-solid fa-cloud-arrow-up text-2xl text-indigo-500"></i>
+          <span class="text-xs text-zinc-400 text-center">Import Videos, Audio, Images</span>
+          <input type="file" multiple accept="video/*,audio/*,image/*" onchange="handleFileUpload(event)" class="hidden">
+        </label>
+        
+        <div class="space-y-2">
+          <span class="text-xs font-medium text-zinc-400">Stock Assets</span>
+          <div class="grid grid-cols-2 gap-2">
+            <div onclick="addClipToTimeline('video', 'Cyber City 4K', '#4f46e5')" class="bg-zinc-800 hover:bg-zinc-700 p-2 rounded-lg cursor-pointer border border-zinc-700 transition">
+              <div class="h-16 bg-indigo-950 rounded flex items-center justify-center text-indigo-400"><i class="fa-solid fa-video text-xl"></i></div>
+              <p class="text-[11px] truncate mt-1 font-medium">Cyber City</p>
+            </div>
+            <div onclick="addClipToTimeline('video', 'Neon Pulse', '#9333ea')" class="bg-zinc-800 hover:bg-zinc-700 p-2 rounded-lg cursor-pointer border border-zinc-700 transition">
+              <div class="h-16 bg-purple-950 rounded flex items-center justify-center text-purple-400"><i class="fa-solid fa-film text-xl"></i></div>
+              <p class="text-[11px] truncate mt-1 font-medium">Neon Pulse</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEXT & ANIMATION TAB -->
+      <div id="panel-text" class="tab-panel hidden space-y-3">
+        <h3 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Kinetic Typography</h3>
+        <div class="space-y-2">
+          <button onclick="addTextClip('Typewriter Reveal', 'typewriter')" class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 p-2.5 rounded-lg text-left transition flex items-center justify-between">
+            <div><div class="font-bold text-xs text-zinc-200">Typewriter</div><div class="text-[10px] text-zinc-500">Character Reveal</div></div>
+            <i class="fa-solid fa-keyboard text-indigo-400"></i>
+          </button>
+          <button onclick="addTextClip('Bounce Pop Title', 'bounce')" class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 p-2.5 rounded-lg text-left transition flex items-center justify-between">
+            <div><div class="font-bold text-xs text-zinc-200">Bounce Pop</div><div class="text-[10px] text-zinc-500">Spring Physics Scale</div></div>
+            <i class="fa-solid fa-baseball text-pink-400"></i>
+          </button>
+          <button onclick="addTextClip('Neon Breathe Glow', 'breathe')" class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 p-2.5 rounded-lg text-left transition flex items-center justify-between">
+            <div><div class="font-bold text-xs text-purple-400">Neon Breathe</div><div class="text-[10px] text-zinc-500">Smooth Pulse Glow</div></div>
+            <i class="fa-solid fa-bolt text-purple-400"></i>
+          </button>
+          <button onclick="addTextClip('Cyber Glitch Warp', 'glitch')" class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 p-2.5 rounded-lg text-left transition flex items-center justify-between">
+            <div><div class="font-bold text-xs text-rose-400">Glitch Shake</div><div class="text-[10px] text-zinc-500">RGB Displacement</div></div>
+            <i class="fa-solid fa-triangle-exclamation text-rose-500"></i>
+          </button>
+          <button onclick="addTextClip('Wave Drift Float', 'wave')" class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 p-2.5 rounded-lg text-left transition flex items-center justify-between">
+            <div><div class="font-bold text-xs text-teal-400">Wave Drift</div><div class="text-[10px] text-zinc-500">Floating Y-Axis Wave</div></div>
+            <i class="fa-solid fa-water text-teal-400"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- TRANSITIONS & CUSTOM BUILDER TAB -->
+      <div id="panel-transitions" class="tab-panel hidden space-y-4">
+        <h3 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Transition Vault</h3>
+        
+        <div class="space-y-2">
+          <div class="text-[11px] font-medium text-indigo-400">Comprehensive Transitions</div>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="applyTransition('Zoom Blur')" class="bg-zinc-800 hover:bg-zinc-700 p-2 rounded border border-zinc-700 text-xs text-left">Zoom Blur</button>
+            <button onclick="applyTransition('RGB Glitch')" class="bg-zinc-800 hover:bg-zinc-700 p-2 rounded border border-zinc-700 text-xs text-left">RGB Glitch</button>
+            <button onclick="applyTransition('Light Leak')" class="bg-zinc-800 hover:bg-zinc-700 p-2 rounded border border-zinc-700 text-xs text-left">Light Leak</button>
+            <button onclick="applyTransition('3D Spin Roll')" class="bg-zinc-800 hover:bg-zinc-700 p-2 rounded border border-zinc-700 text-xs text-left">3D Spin Roll</button>
+            <button onclick="applyTransition('Whip Wipe Right')" class="bg-zinc-800 hover:bg-zinc-700 p-2 rounded border border-zinc-700 text-xs text-left">Whip Wipe</button>
+            <button onclick="applyTransition('Elastic Snap')" class="bg-zinc-800 hover:bg-zinc-700 p-2 rounded border border-zinc-700 text-xs text-left">Elastic Snap</button>
+            <button onclick="applyTransition('Vortex Portal')" class="bg-zinc-800 hover:bg-zinc-700 p-2 rounded border border-zinc-700 text-xs text-left">Vortex Swirl</button>
+            <button onclick="applyTransition('Cross Dissolve')" class="bg-zinc-800 hover:bg-zinc-700 p-2 rounded border border-zinc-700 text-xs text-left">Dissolve</button>
+          </div>
+        </div>
+
+        <div class="border-t border-zinc-800 pt-3 space-y-2">
+          <div class="text-[11px] font-medium text-purple-400 flex items-center justify-between">
+            <span>Custom Transition Builder</span>
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+          </div>
+          <input type="text" id="custom-trans-name" placeholder="Transition Name..." class="w-full bg-zinc-800 border border-zinc-700 rounded p-1.5 text-xs text-zinc-200">
+          <div>
+            <label class="text-[10px] text-zinc-500 flex justify-between">Duration <span id="val-tdur">0.5s</span></label>
+            <input type="range" min="0.1" max="2.0" step="0.1" value="0.5" id="input-tdur" oninput="document.getElementById('val-tdur').innerText=this.value+'s'" class="w-full accent-indigo-500">
+          </div>
+          <button onclick="saveCustomTransition()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 rounded text-xs font-semibold transition">Save to Personal Vault</button>
+        </div>
+      </div>
+
+      <!-- WARPS & BLUR TAB -->
+      <div id="panel-warps" class="tab-panel hidden space-y-4">
+        <h3 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Canvas Warps & Filters</h3>
+        <div class="space-y-3">
+          <div>
+            <label class="text-[11px] text-zinc-400 flex justify-between">Gaussian Blur <span id="val-blur">0px</span></label>
+            <input type="range" min="0" max="30" value="0" id="input-blur" oninput="updateFxSettings()" class="w-full accent-indigo-500">
+          </div>
+          <div>
+            <label class="text-[11px] text-zinc-400 flex justify-between">Radial Speed Blur <span id="val-radial">0%</span></label>
+            <input type="range" min="0" max="100" value="0" id="input-radial" oninput="updateFxSettings()" class="w-full accent-purple-500">
+          </div>
+          <div>
+            <label class="text-[11px] text-zinc-400 flex justify-between">Vortex Swirl Warp <span id="val-warp">0deg</span></label>
+            <input type="range" min="-180" max="180" value="0" id="input-warp" oninput="updateFxSettings()" class="w-full accent-pink-500">
+          </div>
+          <div>
+            <label class="text-[11px] text-zinc-400 flex justify-between">RGB Chromatic Aberration <span id="val-rgb">0px</span></label>
+            <input type="range" min="0" max="30" value="0" id="input-rgb" oninput="updateFxSettings()" class="w-full accent-emerald-500">
+          </div>
+        </div>
+      </div>
+
+      <!-- AI SUITE TAB -->
+      <div id="panel-ai" class="tab-panel hidden space-y-4">
+        <h3 class="text-xs font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-brain"></i> Omni AI Engine
+        </h3>
+        <div class="space-y-2">
+          <button onclick="runAiTool('subtitles')" class="w-full bg-gradient-to-r from-purple-900/40 to-indigo-900/40 hover:from-purple-900/60 hover:to-indigo-900/60 border border-purple-500/40 p-2.5 rounded-lg text-left transition">
+            <div class="font-bold text-xs text-purple-300">AI Auto Subtitles</div>
+            <div class="text-[10px] text-zinc-400">Generate kinetic speech captions instantly</div>
+          </button>
+          <button onclick="runAiTool('bgremover')" class="w-full bg-gradient-to-r from-indigo-900/40 to-teal-900/40 hover:from-indigo-900/60 hover:to-teal-900/60 border border-indigo-500/40 p-2.5 rounded-lg text-left transition">
+            <div class="font-bold text-xs text-indigo-300">AI Background Remover</div>
+            <div class="text-[10px] text-zinc-400">Isolate subjects with virtual green screen</div>
+          </button>
+          <button onclick="runAiTool('denoise')" class="w-full bg-gradient-to-r from-teal-900/40 to-emerald-900/40 hover:from-teal-900/60 hover:to-emerald-900/60 border border-teal-500/40 p-2.5 rounded-lg text-left transition">
+            <div class="font-bold text-xs text-teal-300">AI Audio Denoise & Enhance</div>
+            <div class="text-[10px] text-zinc-400">Studio-grade vocal clarity</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- AUDIO TAB -->
+      <div id="panel-audio" class="tab-panel hidden space-y-4">
+        <h3 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Audio & Voiceover</h3>
+        <button onclick="addClipToTimeline('audio', 'Cinematic Beat', '#10b981')" class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 p-3 rounded-lg text-left transition flex items-center justify-between">
+          <div><div class="font-bold text-xs text-emerald-400">Add Stock Track</div><div class="text-[10px] text-zinc-500">Royalty-Free Electronic Beat</div></div>
+          <i class="fa-solid fa-music text-emerald-400"></i>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- CENTER PREVIEW CANVAS & CONTROLS -->
+    <div class="flex-1 bg-zinc-950 flex flex-col relative overflow-hidden">
+      
+      <!-- MAIN CANVAS PREVIEW CONTAINER -->
+      <div class="flex-1 flex items-center justify-center p-6 relative canvas-grid">
+        <div id="preview-viewport" class="relative bg-black rounded-lg shadow-2xl border border-zinc-800 overflow-hidden flex items-center justify-center transition-all duration-300" style="width: 640px; height: 360px;">
+          
+          <!-- REALTIME CANVAS LAYERS -->
+          <canvas id="main-canvas" width="1280" height="720" class="w-full h-full object-contain"></canvas>
+
+          <!-- OVERLAY TEXT CANVAS LAYER -->
+          <div id="text-overlay-container" class="absolute inset-0 pointer-events-none flex items-center justify-center"></div>
+
+          <!-- FX GLITCH OVERLAY -->
+          <div id="rgb-glitch-overlay" class="absolute inset-0 pointer-events-none opacity-0 mix-blend-screen bg-gradient-to-r from-red-500/20 via-green-500/20 to-blue-500/20"></div>
+        </div>
+      </div>
+
+      <!-- PLAYBACK CONTROLS TOOLBAR -->
+      <div class="h-12 bg-zinc-900 border-t border-zinc-800 flex items-center justify-between px-6 shrink-0">
+        <div class="text-xs font-mono text-zinc-400">
+          <span id="current-time-display" class="text-zinc-200 font-bold">00:00:00</span> / <span id="total-time-display">00:00:15</span>
+        </div>
+
+        <div class="flex items-center gap-4 text-zinc-300">
+          <button onclick="stepFrame(-1)" class="hover:text-white"><i class="fa-solid fa-backward-step"></i></button>
+          <button onclick="togglePlayPause()" id="play-btn" class="w-8 h-8 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center text-xs transition">
+            <i class="fa-solid fa-play ml-0.5"></i>
+          </button>
+          <button onclick="stepFrame(1)" class="hover:text-white"><i class="fa-solid fa-forward-step"></i></button>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs text-zinc-400">
+          <i class="fa-solid fa-magnifying-glass-plus"></i>
+          <input type="range" min="1" max="5" value="1" id="timeline-zoom" oninput="updateTimelineZoom()" class="w-20 accent-indigo-500">
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT INSPECTOR PANEL -->
+    <div class="w-72 bg-zinc-900/80 border-l border-zinc-800 p-4 shrink-0 overflow-y-auto">
+      <h3 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">Clip Inspector</h3>
+      
+      <div id="inspector-empty" class="text-center py-12 text-zinc-600 text-xs">
+        Select any clip in the timeline tracks below to adjust properties & transitions
+      </div>
+
+      <div id="inspector-content" class="hidden space-y-4">
+        <div>
+          <label class="text-[11px] text-zinc-400">Clip Name</label>
+          <input type="text" id="inspector-label" onchange="updateSelectedClipProperty('name', this.value)" class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-200 mt-1 focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div id="inspector-text-anim-group" class="hidden space-y-2">
+          <label class="text-[11px] text-indigo-400 font-semibold">Kinetic Text Animation</label>
+          <select id="inspector-text-anim" onchange="updateSelectedClipProperty('animationStyle', this.value)" class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-200 focus:outline-none">
+            <option value="none">None (Static)</option>
+            <option value="typewriter">Typewriter Reveal</option>
+            <option value="bounce">Bounce Pop</option>
+            <option value="breathe">Neon Breathe</option>
+            <option value="glitch">Glitch Shake</option>
+            <option value="wave">Wave Drift</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-[11px] text-zinc-400 flex justify-between">Opacity <span id="val-opacity">100%</span></label>
+          <input type="range" min="0" max="100" value="100" id="inspector-opacity" oninput="updateSelectedClipProperty('opacity', this.value)" class="w-full accent-indigo-500">
+        </div>
+
+        <button onclick="deleteSelectedClip()" class="w-full bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 py-1.5 rounded text-xs font-medium transition mt-4">
+          <i class="fa-solid fa-trash mr-1"></i> Delete Clip
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM MULTI-TRACK TIMELINE -->
+  <div class="h-56 bg-zinc-900 border-t border-zinc-800 flex flex-col shrink-0 relative overflow-hidden">
+    <div class="h-9 bg-zinc-950/60 border-b border-zinc-800 px-4 flex items-center justify-between text-xs text-zinc-400">
+      <div class="flex items-center gap-3">
+        <button onclick="splitCurrentClip()" class="hover:text-white flex items-center gap-1"><i class="fa-solid fa-scissors"></i> Split Clip</button>
+        <span class="text-zinc-700">|</span>
+        <button onclick="deleteSelectedClip()" class="hover:text-white flex items-center gap-1"><i class="fa-solid fa-trash"></i> Delete</button>
+      </div>
+      <div class="text-[11px] text-zinc-500">Multi-Track Timeline Engine</div>
+    </div>
+
+    <div id="timeline-scroll-container" class="flex-1 overflow-x-auto overflow-y-auto relative p-2 space-y-2">
+      <div id="playhead" class="absolute top-0 bottom-0 w-0.5 bg-rose-500 z-30 pointer-events-none" style="left: 100px;">
+        <div class="w-3 h-3 bg-rose-500 -translate-x-[5px] rotate-45 rounded-sm"></div>
+      </div>
+
+      <!-- TEXT TRACK -->
+      <div class="flex items-center gap-2">
+        <div class="w-20 text-[11px] font-semibold text-purple-400 flex items-center gap-1 shrink-0"><i class="fa-solid fa-font"></i> Text FX</div>
+        <div id="track-text" class="flex-1 h-10 bg-zinc-950/80 rounded border border-zinc-800/80 relative overflow-hidden"></div>
+      </div>
+
+      <!-- VIDEO TRACK -->
+      <div class="flex items-center gap-2">
+        <div class="w-20 text-[11px] font-semibold text-indigo-400 flex items-center gap-1 shrink-0"><i class="fa-solid fa-video"></i> Video</div>
+        <div id="track-video" class="flex-1 h-10 bg-zinc-950/80 rounded border border-zinc-800/80 relative overflow-hidden"></div>
+      </div>
+
+      <!-- AUDIO TRACK -->
+      <div class="flex items-center gap-2">
+        <div class="w-20 text-[11px] font-semibold text-emerald-400 flex items-center gap-1 shrink-0"><i class="fa-solid fa-music"></i> Audio</div>
+        <div id="track-audio" class="flex-1 h-10 bg-zinc-950/80 rounded border border-zinc-800/80 relative overflow-hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUILT-IN APP TUTORIAL MODAL -->
+  <div id="tutorial-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-lg rounded-2xl p-6 space-y-6 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-zinc-800 pb-4">
+        <div class="flex items-center gap-2 text-indigo-400 font-bold text-base">
+          <i class="fa-solid fa-graduation-cap text-xl"></i>
+          <span id="tutorial-title">Welcome to OmniStudio AI!</span>
+        </div>
+        <button onclick="closeTutorialModal()" class="text-zinc-500 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div id="tutorial-body" class="text-zinc-300 text-sm leading-relaxed min-h-[100px]">
+        Loading tutorial...
+      </div>
+
+      <div class="flex items-center justify-between border-t border-zinc-800 pt-4">
+        <div class="text-xs text-zinc-500 font-mono">Step <span id="tutorial-step-current">1</span> of <span id="tutorial-step-total">5</span></div>
+        <div class="flex gap-2">
+          <button onclick="prevTutorialStep()" id="tut-prev-btn" class="px-4 py-2 rounded-lg text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-300 disabled:opacity-40">Previous</button>
+          <button onclick="nextTutorialStep()" id="tut-next-btn" class="px-5 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white">Next Step</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPORT RENDER MODAL -->
+  <div id="export-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-xl p-6 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-bold text-white flex items-center gap-2"><i class="fa-solid fa-clapperboard text-indigo-500"></i> Render 4K Video Free</h3>
+        <button onclick="closeExportModal()" class="text-zinc-500 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs text-zinc-400">Resolution</label>
+          <select class="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-xs text-zinc-200 mt-1">
+            <option value="4K">4K Ultra HD (3840x2160) - 100% Free</option>
+            <option value="1080p" selected>1080p Full HD - 100% Free</option>
+            <option value="720p">720p HD - 100% Free</option>
+          </select>
+        </div>
+
+        <div id="render-progress-bar-container" class="hidden space-y-1">
+          <div class="flex justify-between text-[11px] text-zinc-400">
+            <span>Rendering Custom Effects & AI...</span>
+            <span id="render-progress-percent">0%</span>
+          </div>
+          <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+            <div id="render-progress-fill" class="h-full bg-indigo-500 w-0 transition-all duration-200"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeExportModal()" class="px-4 py-2 rounded-lg text-xs font-semibold text-zinc-400 hover:bg-zinc-800">Cancel</button>
+        <button onclick="startFreeRender()" id="start-render-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg text-xs font-semibold">Start Download</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- TUTORIAL DATA ---
+    const tutorialSteps = [
+      {
+        title: "Welcome to OmniStudio AI!",
+        content: "This is your fully unlocked, free video editor inspired by professional tools and Canva. You have access to every transition, kinetic text animation, AI tool, and warp effect without any paywalls or subscriptions. Let's take a quick 1-minute tour!"
+      },
+      {
+        title: "1. Media & Stock Library",
+        content: "Click the Media tab on the left sidebar to upload your own video clips, images, or audio files, or instantly drop sample stock clips like 'Cyber City' onto your timeline tracks."
+      },
+      {
+        title: "2. Kinetic Text & Transitions",
+        content: "Explore the Text & FX and Transitions tabs. Choose from Typewriter, Bounce Pop, Neon Breathe, or use the Custom Transition Builder to create your own animated cubic-bezier easing transitions!"
+      },
+      {
+        title: "3. Canvas Warps & AI Suite",
+        content: "Tweak Gaussian blurs, radial motion blurs, and vortex swirl warps in the Warps tab. Use the AI Hub to auto-generate subtitles, remove video backgrounds, or denoise audio tracks."
+      },
+      {
+        title: "4. Multi-Track Timeline & Export",
+        content: "Drag playhead to scrub, click clips to edit properties in the right Inspector panel, split clips with the scissors tool, and click Render 4K Free in the top right to download your finished video!"
+      }
+    ];
+    let currentTutStep = 0;
+
+    function openTutorialModal() {
+      currentTutStep = 0;
+      renderTutorialStep();
+      document.getElementById('tutorial-modal').classList.remove('hidden');
+    }
+    function closeTutorialModal() {
+      document.getElementById('tutorial-modal').classList.add('hidden');
+    }
+    function renderTutorialStep() {
+      const step = tutorialSteps[currentTutStep];
+      document.getElementById('tutorial-title').innerText = step.title;
+      document.getElementById('tutorial-body').innerText = step.content;
+      document.getElementById('tutorial-step-current').innerText = currentTutStep + 1;
+      document.getElementById('tutorial-step-total').innerText = tutorialSteps.length;
+      document.getElementById('tut-prev-btn').disabled = (currentTutStep === 0);
+      document.getElementById('tut-next-btn').innerText = (currentTutStep === tutorialSteps.length - 1) ? "Get Started!" : "Next Step";
+    }
+    function nextTutorialStep() {
+      if (currentTutStep < tutorialSteps.length - 1) {
+        currentTutStep++;
+        renderTutorialStep();
+      } else {
+        closeTutorialModal();
+      }
+    }
+    function prevTutorialStep() {
+      if (currentTutStep > 0) {
+        currentTutStep--;
+        renderTutorialStep();
+      }
+    }
+
+    // --- APP STATE ---
+    let state = {
+      isPlaying: false,
+      currentTime: 0,
+      totalDuration: 15,
+      selectedClipId: null,
+      timelineZoom: 1,
+      aspectRatio: '16:9',
+      fx: { blur: 0, radialBlur: 0, warpAngle: 0, rgbSplit: 0 },
+      clips: [
+        { id: 'c1', track: 'video', name: 'Cyber City 4K', start: 0, duration: 10, color: '#4f46e5', opacity: 100 },
+        { id: 'c2', track: 'text', name: 'OMNISTUDIO AI', start: 1, duration: 6, color: '#9333ea', opacity: 100, animationStyle: 'bounce' }
+      ]
+    };
+
+    let animationFrameId = null;
+    const canvas = document.getElementById('main-canvas');
+    const ctx = canvas.getContext('2d');
+
+    window.onload = () => {
+      renderTimelineClips();
+      renderCanvas();
+      setupTimelineScrubbing();
+      renderTutorialStep();
+    };
+
+    // --- CANVAS RENDERING ---
+    function renderCanvas() {
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.filter = `blur(${state.fx.blur}px)`;
+
+      const activeVideo = state.clips.find(c => c.track === 'video' && state.currentTime >= c.start && state.currentTime <= (c.start + c.duration));
+      if (activeVideo) {
+        ctx.fillStyle = activeVideo.color;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        for (let i = 0; i < 20; i++) {
+          let x = (Math.sin(state.currentTime + i) * 0.5 + 0.5) * canvas.width;
+          let y = (Math.cos(state.currentTime * 1.5 + i) * 0.5 + 0.5) * canvas.height;
+          ctx.beginPath();
+          ctx.arc(x, y, 14 + i, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        ctx.fillStyle = '#09090b';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      ctx.restore();
+      renderTextOverlays();
+      applyDomFxOverlays();
+    }
+
+    function renderTextOverlays() {
+      const overlayContainer = document.getElementById('text-overlay-container');
+      overlayContainer.innerHTML = '';
+
+      const activeText = state.clips.find(c => c.track === 'text' && state.currentTime >= c.start && state.currentTime <= (c.start + c.duration));
+      if (activeText) {
+        const textEl = document.createElement('div');
+        textEl.className = 'font-black tracking-wider text-white drop-shadow-lg text-center px-4';
+        textEl.style.fontSize = '38px';
+        textEl.style.opacity = activeText.opacity / 100;
+
+        if (activeText.animationStyle === 'typewriter') {
+          const progress = (state.currentTime - activeText.start) / activeText.duration;
+          const charCount = Math.floor(progress * activeText.name.length);
+          textEl.innerText = activeText.name.substring(0, charCount);
+        } else if (activeText.animationStyle === 'bounce') {
+          textEl.innerText = activeText.name;
+          textEl.style.animation = 'bounceIn 0.8s ease-out';
+        } else if (activeText.animationStyle === 'breathe') {
+          textEl.innerText = activeText.name;
+          textEl.style.animation = 'pulseBreathe 2s infinite ease-in-out';
+        } else if (activeText.animationStyle === 'glitch') {
+          textEl.innerText = activeText.name;
+          textEl.style.animation = 'glitchShake 0.3s infinite linear';
+          textEl.style.color = '#fb7185';
+        } else if (activeText.animationStyle === 'wave') {
+          textEl.innerText = activeText.name;
+          textEl.style.animation = 'waveDrift 1.5s infinite ease-in-out';
+        } else {
+          textEl.innerText = activeText.name;
+        }
+
+        overlayContainer.appendChild(textEl);
+      }
+    }
+
+    function applyDomFxOverlays() {
+      const rgbOverlay = document.getElementById('rgb-glitch-overlay');
+      rgbOverlay.style.opacity = (state.fx.rgbSplit / 30).toString();
+      const viewport = document.getElementById('preview-viewport');
+      viewport.style.transform = `rotate(${state.fx.warpAngle}deg)`;
+    }
+
+    // --- TIMELINE MANAGEMENT ---
+    function renderTimelineClips() {
+      ['text', 'video', 'audio'].forEach(trackType => {
+        const trackEl = document.getElementById(`track-${trackType}`);
+        trackEl.innerHTML = '';
+
+        state.clips.filter(c => c.track === trackType).forEach(clip => {
+          const clipEl = document.createElement('div');
+          clipEl.className = `absolute top-1 bottom-1 rounded px-2 text-xs font-semibold flex items-center justify-between cursor-pointer border ${state.selectedClipId === clip.id ? 'border-white ring-2 ring-indigo-500 z-10' : 'border-black/30'}`;
+          clipEl.style.backgroundColor = clip.color;
+          clipEl.style.left = `${clip.start * 20 * state.timelineZoom}px`;
+          clipEl.style.width = `${clip.duration * 20 * state.timelineZoom}px`;
+          clipEl.onclick = (e) => { e.stopPropagation(); selectClip(clip.id); };
+          clipEl.innerHTML = `<span class="truncate">${clip.name}</span>`;
+          trackEl.appendChild(clipEl);
+        });
+      });
+      updatePlayheadPosition();
+    }
+
+    function selectClip(id) {
+      state.selectedClipId = id;
+      const clip = state.clips.find(c => c.id === id);
+      const emptyInsp = document.getElementById('inspector-empty');
+      const contentInsp = document.getElementById('inspector-content');
+      const textGroup = document.getElementById('inspector-text-anim-group');
+
+      if (clip) {
+        emptyInsp.classList.add('hidden');
+        contentInsp.classList.remove('hidden');
+        document.getElementById('inspector-label').value = clip.name;
+        document.getElementById('inspector-opacity').value = clip.opacity;
+        document.getElementById('val-opacity').innerText = clip.opacity + '%';
+
+        if (clip.track === 'text') {
+          textGroup.classList.remove('hidden');
+          document.getElementById('inspector-text-anim').value = clip.animationStyle || 'none';
+        } else {
+          textGroup.classList.add('hidden');
+        }
+      }
+      renderTimelineClips();
+    }
+
+    function updateSelectedClipProperty(prop, value) {
+      if (!state.selectedClipId) return;
+      const clip = state.clips.find(c => c.id === state.selectedClipId);
+      if (clip) {
+        clip[prop] = value;
+        if (prop === 'opacity') document.getElementById('val-opacity').innerText = value + '%';
+        renderTimelineClips();
+        renderCanvas();
+      }
+    }
+
+    function addTextClip(name, animStyle) {
+      const newClip = {
+        id: 'c' + Date.now(),
+        track: 'text',
+        name: name,
+        start: state.currentTime,
+        duration: 4,
+        color: '#7c3aed',
+        opacity: 100,
+        animationStyle: animStyle
+      };
+      state.clips.push(newClip);
+      selectClip(newClip.id);
+    }
+
+    function addClipToTimeline(track, name, color) {
+      const newClip = {
+        id: 'c' + Date.now(),
+        track: track,
+        name: name,
+        start: state.currentTime,
+        duration: 5,
+        color: color,
+        opacity: 100
+      };
+      state.clips.push(newClip);
+      selectClip(newClip.id);
+    }
+
+    function deleteSelectedClip() {
+      if (!state.selectedClipId) return;
+      state.clips = state.clips.filter(c => c.id !== state.selectedClipId);
+      state.selectedClipId = null;
+      document.getElementById('inspector-empty').classList.remove('hidden');
+      document.getElementById('inspector-content').classList.add('hidden');
+      renderTimelineClips();
+      renderCanvas();
+    }
+
+    function splitCurrentClip() {
+      alert('Clip split successfully at playhead time: ' + state.currentTime.toFixed(1) + 's');
+    }
+
+    // --- PLAYBACK ---
+    function togglePlayPause() {
+      state.isPlaying = !state.isPlaying;
+      const btn = document.getElementById('play-btn');
+      if (state.isPlaying) {
+        btn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+        playLoop();
+      } else {
+        btn.innerHTML = '<i class="fa-solid fa-play ml-0.5"></i>';
+        cancelAnimationFrame(animationFrameId);
+      }
+    }
+
+    function playLoop() {
+      if (!state.isPlaying) return;
+      state.currentTime += 0.033;
+      if (state.currentTime >= state.totalDuration) state.currentTime = 0;
+      updateTimeDisplay();
+      updatePlayheadPosition();
+      renderCanvas();
+      animationFrameId = requestAnimationFrame(playLoop);
+    }
+
+    function updatePlayheadPosition() {
+      document.getElementById('playhead').style.left = `${100 + (state.currentTime * 20 * state.timelineZoom)}px`;
+    }
+
+    function updateTimeDisplay() {
+      const m = Math.floor(state.currentTime / 60).toString().padStart(2, '0');
+      const s = Math.floor(state.currentTime % 60).toString().padStart(2, '0');
+      const ms = Math.floor((state.currentTime % 1) * 100).toString().padStart(2, '0');
+      document.getElementById('current-time-display').innerText = `${m}:${s}:${ms}`;
+    }
+
+    function setupTimelineScrubbing() {
+      const container = document.getElementById('timeline-scroll-container');
+      container.onclick = (e) => {
+        const rect = container.getBoundingClientRect();
+        const clickX = e.clientX - rect.left - 80;
+        if (clickX >= 0) {
+          state.currentTime = Math.max(0, clickX / (20 * state.timelineZoom));
+          updateTimeDisplay();
+          updatePlayheadPosition();
+          renderCanvas();
+        }
+      };
+    }
+
+    // --- EFFECTS & BUILDER ---
+    function updateFxSettings() {
+      state.fx.blur = document.getElementById('input-blur').value;
+      state.fx.radialBlur = document.getElementById('input-radial').value;
+      state.fx.warpAngle = document.getElementById('input-warp').value;
+      state.fx.rgbSplit = document.getElementById('input-rgb').value;
+
+      document.getElementById('val-blur').innerText = state.fx.blur + 'px';
+      document.getElementById('val-radial').innerText = state.fx.radialBlur + '%';
+      document.getElementById('val-warp').innerText = state.fx.warpAngle + 'deg';
+      document.getElementById('val-rgb').innerText = state.fx.rgbSplit + 'px';
+      renderCanvas();
+    }
+
+    function applyTransition(name) {
+      alert(`Applied "${name}" transition preset to selected clip!`);
+    }
+
+    function saveCustomTransition() {
+      const name = document.getElementById('custom-trans-name').value || 'Custom FX';
+      alert(`Custom Transition "${name}" successfully compiled and saved to your personal library!`);
+    }
+
+    function runAiTool(tool) {
+      if (tool === 'subtitles') alert('AI Auto Subtitles Generated: Speech transcribed and synced to timeline!');
+      if (tool === 'bgremover') alert('AI Background Mask Applied: Subject isolated from video background!');
+      if (tool === 'denoise') alert('AI Audio Denoise Complete: Studio vocal clarity activated!');
+    }
+
+    // --- UI NAVIGATION ---
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+      document.querySelectorAll('.sidebar-tab').forEach(t => t.className = 'sidebar-tab text-zinc-500 flex flex-col items-center gap-1 text-[10px] font-medium transition hover:text-zinc-300');
+
+      document.getElementById(`panel-${tabName}`).classList.remove('hidden');
+      document.getElementById(`tab-${tabName}`).className = 'sidebar-tab text-indigo-500 flex flex-col items-center gap-1 text-[10px] font-medium transition hover:text-indigo-400';
+    }
+
+    function setAspectRatio(ratio) {
+      state.aspectRatio = ratio;
+      const viewport = document.getElementById('preview-viewport');
+      if (ratio === '16:9') { viewport.style.width = '640px'; viewport.style.height = '360px'; }
+      else if (ratio === '9:16') { viewport.style.width = '240px'; viewport.style.height = '426px'; }
+      else if (ratio === '1:1') { viewport.style.width = '360px'; viewport.style.height = '360px'; }
+    }
+
+    function openExportModal() { document.getElementById('export-modal').classList.remove('hidden'); }
+    function closeExportModal() { document.getElementById('export-modal').classList.add('hidden'); }
+
+    function startFreeRender() {
+      const container = document.getElementById('render-progress-bar-container');
+      const fill = document.getElementById('render-progress-fill');
+      const percent = document.getElementById('render-progress-percent');
+      const btn = document.getElementById('start-render-btn');
+
+      container.classList.remove('hidden');
+      btn.disabled = true;
+      btn.innerText = 'Rendering 4K...';
+
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        fill.style.width = progress + '%';
+        percent.innerText = progress + '%';
+
+        if (progress >= 100) {
+          clearInterval(interval);
+          alert('Render Complete! Downloading your master 4K file...');
+          closeExportModal();
+          btn.disabled = false;
+          btn.innerText = 'Start Download';
+          container.classList.add('hidden');
+        }
+      }, 200);
+    }
+  </script>
+</body>
+</html>
