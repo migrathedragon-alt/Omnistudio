@@ -94,10 +94,18 @@
         <label class="border-2 border-dashed border-zinc-700 hover:border-indigo-500 rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition bg-zinc-800/30">
           <i class="fa-solid fa-cloud-arrow-up text-2xl text-indigo-500"></i>
           <span class="text-xs text-zinc-400 text-center">Import Videos, Audio, Images</span>
-          <input type="file" multiple accept="video/*,audio/*,image/*" onchange="handleFileUpload(event)" class="hidden">
+          <input type="file" id="media-file-input" multiple accept="video/*,audio/*,image/*" onchange="handleFileUpload(event)" class="hidden">
         </label>
         
-        <div class="space-y-2">
+        <!-- Uploaded Files List Container -->
+        <div id="uploaded-files-list" class="space-y-1.5">
+          <span class="text-xs font-medium text-zinc-400">Imported Files</span>
+          <div id="imported-items-container" class="space-y-1">
+            <!-- Dynamically populated files appear here -->
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-2 border-t border-zinc-800">
           <span class="text-xs font-medium text-zinc-400">Stock Assets</span>
           <div class="grid grid-cols-2 gap-2">
             <div onclick="addClipToTimeline('video', 'Cyber City 4K', '#4f46e5')" class="bg-zinc-800 hover:bg-zinc-700 p-2 rounded-lg cursor-pointer border border-zinc-700 transition">
@@ -484,6 +492,39 @@
       renderTutorialStep();
     };
 
+    // --- FILE UPLOAD HANDLER FIX ---
+    function handleFileUpload(event) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+
+      const container = document.getElementById('imported-items-container');
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileName = file.name;
+        const fileType = file.type.includes('audio') ? 'audio' : 'video';
+        const trackTarget = fileType === 'audio' ? 'audio' : 'video';
+        const clipColor = fileType === 'audio' ? '#10b981' : '#4f46e5';
+
+        // 1. Add visual item to Media Library list sidebar
+        const itemEl = document.createElement('div');
+        itemEl.className = 'bg-zinc-800 hover:bg-zinc-700 p-2 rounded-lg flex items-center justify-between cursor-pointer border border-zinc-700 text-xs transition';
+        itemEl.innerHTML = `<span class="truncate text-zinc-200"><i class="fa-solid ${fileType === 'audio' ? 'fa-music text-emerald-400' : 'fa-video text-indigo-400'} mr-2"></i>${fileName}</span> <span class="text-[10px] text-indigo-400 font-semibold">+ Add</span>`;
+        
+        // Clicking imported item adds it to timeline
+        itemEl.onclick = () => {
+          addClipToTimeline(trackTarget, fileName, clipColor);
+        };
+        container.appendChild(itemEl);
+
+        // 2. Automatically add the first uploaded file directly onto the timeline
+        if (i === 0) {
+          addClipToTimeline(trackTarget, fileName, clipColor);
+        }
+      }
+      alert(`Successfully imported ${files.length} file(s)! Click them in your "Imported Files" list or on the timeline to use them.`);
+    }
+
     // --- CANVAS RENDERING ---
     function renderCanvas() {
       ctx.save();
@@ -721,7 +762,7 @@
 
     function saveCustomTransition() {
       const name = document.getElementById('custom-trans-name').value || 'Custom FX';
-      alert(`Custom Transition "${name}" successfully compiled and saved to your personal library!`);
+      alert(`Custom Transition "${name}" successfully compiled and saved to your personal vault!`);
     }
 
     function runAiTool(tool) {
